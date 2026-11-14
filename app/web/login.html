@@ -3,19 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Вход — Умные розетки</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>Вход — Smart Sockets Hub</title>
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body data-page="login">
-  <main class="login-box">
-    <h1>Умные розетки</h1>
-    <form id="login-form">
-      <input name="username" placeholder="Логин" autocomplete="username" required>
-      <input name="password" type="password" placeholder="Пароль" autocomplete="current-password" required>
-      <button type="submit">Войти</button>
-      <p id="error" class="error"></p>
-    </form>
+  <main class="login-shell">
+    <div class="login-card">
+      <div class="brand login-brand">
+        <span class="brand-mark">⚡</span>
+        <div><h1>Smart Sockets Hub</h1><span class="brand-sub">Управление розетками</span></div>
+      </div>
+      <form id="login-form" class="stack">
+        <label class="field"><span>Логин</span>
+          <input name="username" autocomplete="username" required autofocus>
+        </label>
+        <label class="field"><span>Пароль</span>
+          <input name="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit" class="btn primary wide">Войти</button>
+        <p id="error" class="error"></p>
+      </form>
+    </div>
   </main>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=3"></script>
 </body>
 </html>

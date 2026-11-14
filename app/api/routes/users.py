@@ -12,7 +12,6 @@ router = APIRouter(prefix="/api/users", tags=["users"], dependencies=[Depends(re
 
 
 async def _guard_last_admin(db: AsyncSession, user: User, will_stay_admin: bool) -> None:
-    """Нельзя удалить/отключить/разжаловать последнего активного админа."""
     if will_stay_admin or user.role != UserRole.admin or not user.is_active:
         return
     others = (await db.execute(
@@ -33,7 +32,7 @@ async def list_users(db: AsyncSession = Depends(get_db)):
 async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db)):
     exists = (await db.execute(select(User).where(User.username == data.username))).scalar_one_or_none()
     if exists:
-        raise HTTPException(400, "Имя уже занято")
+        raise HTTPException(400, "Такой логин уже занят")
     user = User(username=data.username, password_hash=hash_password(data.password), role=data.role)
     db.add(user)
     await db.commit()
@@ -47,6 +46,14 @@ async def update_user(user_id: int, data: UserUpdate,
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(404, "Пользователь не найден")
+
+    if data.username is not None and data.username != user.username:
+        exists = (await db.execute(
+            select(User).where(User.username == data.username, User.id != user.id)
+        )).scalar_one_or_none()
+        if exists:
+            raise HTTPException(400, "Такой логин уже занят")
+        user.username = data.username
 
     new_role = data.role if data.role is not None else user.role
     new_active = data.is_active if data.is_active is not None else user.is_active

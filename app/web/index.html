@@ -3,23 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Умные розетки</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>Розетки — Smart Sockets Hub</title>
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body data-page="dashboard">
   <header class="topbar">
-    <h1>Умные розетки</h1>
+    <div class="brand">
+      <span class="brand-mark">⚡</span>
+      <div><h1>Smart Sockets Hub</h1><span class="brand-sub">Панель управления</span></div>
+    </div>
     <div class="top-actions">
-      <button id="all-on">Включить всё</button>
-      <button id="all-off">Выключить всё</button>
-      <button id="refresh">Обновить</button>
-      <button id="scan" hidden>Сканировать сеть</button>
-      <a id="admin-link" href="/admin" hidden>Админка</a>
-      <span id="whoami" class="muted"></span>
-      <button id="logout" class="ghost">Выйти</button>
+      <button id="all-on" class="btn small">Включить всё</button>
+      <button id="all-off" class="btn small ghost">Выключить всё</button>
+      <button id="refresh" class="btn small ghost">Обновить</button>
+      <button id="scan" class="btn small ghost" hidden>Сканировать сеть</button>
+      <a id="admin-link" class="btn small ghost" href="/admin" hidden>Админка</a>
+      <span class="top-divider"></span>
+      <span id="whoami" class="who"></span>
+      <button id="profile-btn" class="btn small ghost">Профиль</button>
+      <button id="logout" class="btn small ghost">Выйти</button>
     </div>
   </header>
-  <main id="controllers" class="grid"></main>
-  <script src="/static/app.js"></script>
+  <main id="controllers" class="listing"></main>
+  <script src="/static/app.js?v=3"></script>
 </body>
 </html>
