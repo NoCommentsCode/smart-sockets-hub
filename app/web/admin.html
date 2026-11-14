@@ -3,41 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Админка — Умные розетки</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>Админка — Smart Sockets Hub</title>
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body data-page="admin">
   <header class="topbar">
-    <h1>Пользователи</h1>
+    <div class="brand">
+      <span class="brand-mark">⚡</span>
+      <div><h1>Smart Sockets Hub</h1><span class="brand-sub">Админ-панель</span></div>
+    </div>
     <div class="top-actions">
-      <a href="/">← К розеткам</a>
-      <button id="logout" class="ghost">Выйти</button>
+      <a class="btn small ghost" href="/">← Розетки</a>
+      <span class="top-divider"></span>
+      <span id="whoami" class="who"></span>
+      <button id="profile-btn" class="btn small ghost">Профиль</button>
+      <button id="logout" class="btn small ghost">Выйти</button>
     </div>
   </header>
-  <main class="admin-layout">
-    <section class="card">
-      <h2 id="form-title">Новый пользователь</h2>
-      <form id="user-form">
-        <input type="hidden" name="id">
-        <input name="username" placeholder="Логин" required minlength="3">
-        <input name="password" type="password" placeholder="Пароль (мин. 6 символов)" minlength="6">
-        <select name="role">
-          <option value="user">user</option>
-          <option value="admin">admin</option>
+
+  <main class="admin-page">
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Пользователи</h2>
+          <p class="muted">Учётные записи системы умных розеток</p>
+        </div>
+        <button id="add-user" class="btn primary">＋ Добавить пользователя</button>
+      </div>
+
+      <div class="toolbar">
+        <input id="user-search" class="search" type="search" placeholder="Поиск по логину…" autocomplete="off">
+        <select id="role-filter" class="select">
+          <option value="all">Все роли</option>
+          <option value="admin">Администраторы</option>
+          <option value="user">Пользователи</option>
         </select>
-        <label class="check"><input type="checkbox" name="is_active" checked> Активен</label>
-        <button type="submit">Сохранить</button>
-        <button type="button" id="reset-form" class="ghost">Сбросить</button>
-        <p id="form-error" class="error"></p>
-      </form>
-    </section>
-    <section class="card">
-      <table>
-        <thead><tr><th>ID</th><th>Логин</th><th>Роль</th><th>Активен</th><th></th></tr></thead>
-        <tbody id="users"></tbody>
-      </table>
+      </div>
+
+      <div id="users" class="user-list"></div>
     </section>
   </main>
-  <script src="/static/app.js"></script>
+
+  <script src="/static/app.js?v=3"></script>
 </body>
 </html>
