@@ -4,27 +4,104 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Вход — Smart Sockets Hub</title>
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body data-page="login">
   <main class="login-shell">
-    <div class="login-card">
-      <div class="brand login-brand">
-        <span class="brand-mark">⚡</span>
-        <div><h1>Smart Sockets Hub</h1><span class="brand-sub">Управление розетками</span></div>
-      </div>
-      <form id="login-form" class="stack">
-        <label class="field"><span>Логин</span>
-          <input name="username" autocomplete="username" required autofocus>
-        </label>
-        <label class="field"><span>Пароль</span>
-          <input name="password" type="password" autocomplete="current-password" required>
-        </label>
-        <button type="submit" class="btn primary wide">Войти</button>
-        <p id="error" class="error"></p>
-      </form>
+    <div class="login-bg" aria-hidden="true">
+      <div class="login-grid"></div>
+      <div class="login-glow one"></div>
+      <div class="login-glow two"></div>
+      <div class="login-glow three"></div>
+    </div>
+
+    <div class="login-content">
+      <section class="login-hero">
+        <div class="brand">
+          <span class="brand-mark">⚡</span>
+          <div>
+            <h1>Smart Sockets Hub</h1>
+            <span class="brand-sub">Локальный центр управления питанием</span>
+          </div>
+        </div>
+
+        <div class="login-copy">
+          <span class="chip cyan login-eyebrow">ESP32 · Raspberry Pi · LAN</span>
+          <h2>Энергия дома<br>под вашим контролем</h2>
+          <p>
+            Единая панель для всех умных розеток: статусы устройств в реальном времени,
+            групповое управление, роли пользователей и безопасный доступ только для своих.
+          </p>
+        </div>
+
+        <div class="login-stats">
+          <div class="login-stat">
+            <strong>24/7</strong>
+            <span>опрос контроллеров</span>
+          </div>
+          <div class="login-stat">
+            <strong>RBAC</strong>
+            <span>роли и доступ</span>
+          </div>
+          <div class="login-stat">
+            <strong>LAN</strong>
+            <span>без облака</span>
+          </div>
+        </div>
+
+        <div class="login-preview" aria-hidden="true">
+          <div class="preview-head">
+            <span class="status-dot on"></span>
+            <span>Контроллер · 192.168.1.42</span>
+            <span class="chip green">в сети</span>
+          </div>
+          <div class="preview-row">
+            <span>Гостиная · торшер</span>
+            <span class="preview-toggle on">ON</span>
+          </div>
+          <div class="preview-row">
+            <span>Кабинет · монитор</span>
+            <span class="preview-toggle on">ON</span>
+          </div>
+          <div class="preview-row">
+            <span>Кухня · чайник</span>
+            <span class="preview-toggle">OFF</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="login-card">
+        <div class="login-card-head">
+          <span class="chip violet">Авторизация</span>
+          <h2 class="login-title">С возвращением</h2>
+          <p class="login-sub">Войдите, чтобы управлять розетками и пользователями.</p>
+        </div>
+
+        <form id="login-form" class="stack">
+          <label class="field">
+            <span>Логин</span>
+            <input name="username" autocomplete="username" required autofocus placeholder="например, admin">
+          </label>
+
+          <label class="field">
+            <span>Пароль</span>
+            <div class="password-wrap">
+              <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••">
+              <button type="button" id="toggle-password" class="password-toggle" aria-label="Показать пароль">👁</button>
+            </div>
+          </label>
+
+          <button type="submit" class="btn primary wide">Войти в панель</button>
+          <p id="error" class="error" role="alert"></p>
+        </form>
+
+        <p class="login-foot">
+          Доступ выдаёт администратор системы. Если вы забыли пароль — обратитесь к нему для сброса.
+        </p>
+      </section>
     </div>
   </main>
-  <script src="/static/app.js?v=3"></script>
+
+  <script src="/static/app.js?v=4"></script>
 </body>
 </html>
