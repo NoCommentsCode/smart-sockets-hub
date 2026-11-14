@@ -8,7 +8,13 @@ button, .top-actions a { padding: 7px 12px; border: 1px solid #ccc; border-radiu
   background: #fff; cursor: pointer; font-size: 14px; text-decoration: none; color: inherit; }
 button:hover { background: #f0f0f0; }
 button.ghost { border-color: transparent; color: #666; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 20px; }
+
+.listing { padding: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.section-title { font-size: 14px; color: #666; margin: 8px 0 12px;
+  text-transform: uppercase; letter-spacing: .04em; }
+.listing-section + .listing-section { margin-top: 28px; }
+
 .card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px; }
 .card.offline { opacity: .55; }
 .card header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -21,6 +27,9 @@ button.ghost { border-color: transparent; color: #666; }
 .relays li { display: flex; justify-content: space-between; align-items: center;
   padding: 8px 0; border-top: 1px solid #eee; }
 .toggle.on { background: #116b3f; border-color: #116b3f; color: #fff; }
+button.trash { margin-left: auto; border-color: transparent; background: transparent; font-size: 16px; }
+button.trash:hover { background: #f6dada; }
+
 .login-box { max-width: 340px; margin: 12vh auto; background: #fff; padding: 28px;
   border-radius: 10px; border: 1px solid #e0e0e0; }
 .login-box h1 { font-size: 20px; margin-top: 0; }
@@ -31,4 +40,14 @@ input, select { padding: 9px 10px; border: 1px solid #ccc; border-radius: 6px; f
 .admin-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; padding: 20px; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 100; }
+.overlay[hidden] { display: none; }
+.modal { background: #fff; border-radius: 10px; padding: 20px;
+  max-width: 380px; width: calc(100% - 40px); }
+.modal h3 { margin: 0 0 8px; font-size: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+button.danger { background: #b00020; border-color: #b00020; color: #fff; }
+button.danger:hover { background: #8f1d1d; }
 @media (max-width: 800px) { .admin-layout { grid-template-columns: 1fr; } }
