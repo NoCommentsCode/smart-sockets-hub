@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Умные розетки</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-page="dashboard">
+  <header class="topbar">
+    <h1>Умные розетки</h1>
+    <div class="top-actions">
+      <button id="all-on">Включить всё</button>
+      <button id="all-off">Выключить всё</button>
+      <button id="refresh">Обновить</button>
+      <button id="scan" hidden>Сканировать сеть</button>
+      <a id="admin-link" href="/admin" hidden>Админка</a>
+      <span id="whoami" class="muted"></span>
+      <button id="logout" class="ghost">Выйти</button>
+    </div>
+  </header>
+  <main id="controllers" class="grid"></main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

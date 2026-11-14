@@ -1,0 +1,34 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f4f5f7; color: #1c1e21; }
+.topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+  gap: 8px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #e0e0e0; }
+.topbar h1 { font-size: 18px; margin: 0; }
+.top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button, .top-actions a { padding: 7px 12px; border: 1px solid #ccc; border-radius: 6px;
+  background: #fff; cursor: pointer; font-size: 14px; text-decoration: none; color: inherit; }
+button:hover { background: #f0f0f0; }
+button.ghost { border-color: transparent; color: #666; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 20px; }
+.card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; padding: 16px; }
+.card.offline { opacity: .55; }
+.card header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.card h2 { font-size: 16px; margin: 0; }
+.badge { font-size: 12px; padding: 2px 8px; border-radius: 10px; }
+.badge.on { background: #d9f2e3; color: #116b3f; }
+.badge.off { background: #f6dada; color: #8f1d1d; }
+.muted, .ip { color: #888; font-size: 13px; }
+.relays { list-style: none; margin: 0; padding: 0; }
+.relays li { display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-top: 1px solid #eee; }
+.toggle.on { background: #116b3f; border-color: #116b3f; color: #fff; }
+.login-box { max-width: 340px; margin: 12vh auto; background: #fff; padding: 28px;
+  border-radius: 10px; border: 1px solid #e0e0e0; }
+.login-box h1 { font-size: 20px; margin-top: 0; }
+form { display: flex; flex-direction: column; gap: 10px; }
+input, select { padding: 9px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+.error { color: #b00020; font-size: 13px; min-height: 1em; margin: 0; }
+.check { display: flex; gap: 6px; align-items: center; font-size: 14px; }
+.admin-layout { display: grid; grid-template-columns: 300px 1fr; gap: 16px; padding: 20px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+@media (max-width: 800px) { .admin-layout { grid-template-columns: 1fr; } }
