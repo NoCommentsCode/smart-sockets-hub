@@ -1,3 +1,5 @@
+console.log("app.js v2");
+
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g,
   (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -39,54 +41,126 @@ function initLogin() {
 }
 
 /* ---------- Дашборд ---------- */
+let isAdmin = false;
+
+function showConfirm({ title, text, okText = "OK", cancelText = "Отмена" }) {
+  return new Promise((resolve) => {
+    const overlay = $("#confirm-overlay");
+    $("#confirm-title").textContent = title;
+    $("#confirm-text").textContent = text;
+    const okBtn = $("#confirm-ok");
+    const cancelBtn = $("#confirm-cancel");
+    okBtn.textContent = okText;
+    cancelBtn.textContent = cancelText;
+    overlay.hidden = false;
+
+    const close = (result) => {
+      overlay.hidden = true;
+      okBtn.onclick = cancelBtn.onclick = overlay.onclick = null;
+      document.removeEventListener("keydown", onKey);
+      resolve(result);
+    };
+    const onKey = (e) => { if (e.key === "Escape") close(false); };
+    okBtn.onclick = () => close(true);
+    cancelBtn.onclick = () => close(false);
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    document.addEventListener("keydown", onKey);
+  });
+}
+
 async function loadControllers() {
   const list = await api("/api/controllers");
   const root = $("#controllers");
   root.innerHTML = "";
+
   if (!list.length) {
     root.innerHTML = '<p class="muted">Контроллеры не найдены. Дождитесь скана сети или нажмите «Сканировать сеть».</p>';
     return;
   }
-  for (const c of list) {
-    const card = document.createElement("section");
-    card.className = "card" + (c.is_online ? "" : " offline");
-    card.innerHTML = `
-      <header>
-        <h2>${esc(c.name || c.ip)}</h2>
-        <span class="badge ${c.is_online ? "on" : "off"}">${c.is_online ? "online" : "offline"}</span>
-        <span class="ip">${esc(c.ip)}</span>
-        <button data-act="on">Включить все</button>
-        <button data-act="off">Выключить все</button>
-      </header>
-      <ul class="relays"></ul>`;
-    const ul = card.querySelector(".relays");
-    for (const r of c.relays) {
-      const li = document.createElement("li");
-      li.innerHTML = `<span>${esc(r.name || "Розетка " + r.relay_id)}</span>
-        <button class="toggle ${r.state ? "on" : ""}" ${c.is_online ? "" : "disabled"}>
-          ${r.state ? "Выключить" : "Включить"}</button>`;
-      li.querySelector("button").onclick = guard(async () => {
-        await api(`/api/relays/${r.id}/state`, "POST", { state: !r.state });
-        await loadControllers();
-      });
-      ul.appendChild(li);
-    }
-    card.querySelector('[data-act="on"]').onclick = guard(async () => {
-      await api(`/api/controllers/${c.id}/all`, "POST", { state: true });
+
+  const byName = (a, b) => (a.name || a.ip).localeCompare(b.name || b.ip, "ru");
+  const active = list.filter((c) => c.is_online).sort(byName);
+  const inactive = list.filter((c) => !c.is_online).sort(byName);
+
+  root.appendChild(renderSection("Активные", active));
+  if (inactive.length) root.appendChild(renderSection("Неактивные", inactive));
+}
+
+function renderSection(title, controllers) {
+  const section = document.createElement("section");
+  section.className = "listing-section";
+  const h = document.createElement("h2");
+  h.className = "section-title";
+  h.textContent = `${title} (${controllers.length})`;
+  section.appendChild(h);
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  for (const c of controllers) grid.appendChild(renderCard(c));
+  section.appendChild(grid);
+  return section;
+}
+
+function renderCard(c) {
+  const card = document.createElement("section");
+  card.className = "card" + (c.is_online ? "" : " offline");
+  card.innerHTML = `
+    <header>
+      <h2>${esc(c.name || c.ip)}</h2>
+      <span class="badge ${c.is_online ? "on" : "off"}">${c.is_online ? "online" : "offline"}</span>
+      <span class="ip">${esc(c.ip)}</span>
+      <button data-act="on">Включить все</button>
+      <button data-act="off">Выключить все</button>
+      ${isAdmin ? '<button class="trash" data-act="del" title="Удалить контроллер">🗑</button>' : ""}
+    </header>
+    <ul class="relays"></ul>`;
+
+  const ul = card.querySelector(".relays");
+  for (const r of c.relays) {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${esc(r.name || "Розетка " + r.relay_id)}</span>
+      <button class="toggle ${r.state ? "on" : ""}" ${c.is_online ? "" : "disabled"}>
+        ${r.state ? "Выключить" : "Включить"}</button>`;
+    li.querySelector("button").onclick = guard(async () => {
+      await api(`/api/relays/${r.id}/state`, "POST", { state: !r.state });
       await loadControllers();
     });
-    card.querySelector('[data-act="off"]').onclick = guard(async () => {
-      await api(`/api/controllers/${c.id}/all`, "POST", { state: false });
-      await loadControllers();
-    });
-    root.appendChild(card);
+    ul.appendChild(li);
   }
+
+  card.querySelector('[data-act="on"]').onclick = guard(async () => {
+    await api(`/api/controllers/${c.id}/all`, "POST", { state: true });
+    await loadControllers();
+  });
+  card.querySelector('[data-act="off"]').onclick = guard(async () => {
+    await api(`/api/controllers/${c.id}/all`, "POST", { state: false });
+    await loadControllers();
+  });
+
+  if (isAdmin) {
+    card.querySelector('[data-act="del"]').onclick = async () => {
+      const ok = await showConfirm({
+        title: "Удалить контроллер?",
+        text: `${c.name || c.ip} (${c.ip}) и все его розетки будут удалены из базы.` +
+          (c.is_online
+            ? " Устройство сейчас в сети — оно будет найдено заново при следующем сканировании."
+            : ""),
+        okText: "Удалить",
+      });
+      if (!ok) return;
+      try {
+        await api(`/api/controllers/${c.id}`, "DELETE");
+        await loadControllers();
+      } catch (e) { alert(e.message); }
+    };
+  }
+  return card;
 }
 
 async function initDashboard() {
   const me = await api("/api/auth/me");
+  isAdmin = me.role === "admin";
   $("#whoami").textContent = me.username;
-  if (me.role === "admin") {
+  if (isAdmin) {
     $("#admin-link").hidden = false;
     $("#scan").hidden = false;
   }
@@ -133,7 +207,7 @@ function fillForm(u) {
   const f = $("#user-form");
   f.id.value = u ? u.id : "";
   f.username.value = u ? u.username : "";
-  f.username.disabled = !!u;             // логин не меняем
+  f.username.disabled = !!u;
   f.password.value = "";
   f.password.required = !u;
   f.role.value = u ? u.role : "user";

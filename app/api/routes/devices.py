@@ -86,3 +86,13 @@ async def set_controller_all(controller_id: int, data: StateRequest,
     c.last_seen = datetime.now(timezone.utc)
     await db.commit()
     return {"ok": True}
+
+@router.delete("/controllers/{controller_id}", status_code=204)
+async def delete_controller(controller_id: int,
+                            admin: User = Depends(require_admin),
+                            db: AsyncSession = Depends(get_db)):
+    c = await db.get(Controller, controller_id)
+    if not c:
+        raise HTTPException(404, "Контроллер не найден")
+    await db.delete(c)  # розетки удалятся каскадом
+    await db.commit()
