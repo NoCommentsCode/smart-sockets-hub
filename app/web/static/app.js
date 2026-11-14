@@ -1,4 +1,4 @@
-console.log("app.js v3");
+console.log("app.js v4");
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g,
@@ -125,10 +125,19 @@ let currentUser = null;
 
 function bindCommon(me) {
   currentUser = me;
+
   const who = $("#whoami");
   if (who) who.textContent = me.username;
+
+  const adminLink = $("#admin-link");
+  if (adminLink) adminLink.hidden = me.role !== "admin";
+
+  const scanBtn = $("#scan");
+  if (scanBtn) scanBtn.hidden = me.role !== "admin";
+
   const profileBtn = $("#profile-btn");
   if (profileBtn) profileBtn.onclick = () => openProfileModal();
+
   const logoutBtn = $("#logout");
   if (logoutBtn) logoutBtn.onclick = guard(async () => {
     await api("/api/auth/logout", "POST");
@@ -181,14 +190,40 @@ async function openProfileModal() {
 
 /* ---------- Логин ---------- */
 function initLogin() {
-  $("#login-form").onsubmit = async (e) => {
+  const form = $("#login-form");
+  const error = $("#error");
+  const password = $("#password");
+  const toggle = $("#toggle-password");
+
+  if (toggle && password) {
+    toggle.onclick = () => {
+      const show = password.type === "password";
+      password.type = show ? "text" : "password";
+      toggle.textContent = show ? "🙈" : "👁";
+      toggle.setAttribute("aria-label", show ? "Скрыть пароль" : "Показать пароль");
+      password.focus();
+    };
+  }
+
+  form.addEventListener("input", () => { error.textContent = ""; });
+
+  form.onsubmit = async (e) => {
     e.preventDefault();
-    const f = new FormData(e.target);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const f = new FormData(form);
+    submitBtn.disabled = true;
+    submitBtn.classList.add("loading");
     try {
-      await api("/api/auth/login", "POST",
-        { username: f.get("username"), password: f.get("password") });
+      await api("/api/auth/login", "POST", {
+        username: f.get("username"),
+        password: f.get("password"),
+      });
       location.href = "/";
-    } catch (err) { $("#error").textContent = err.message; }
+    } catch (err) {
+      error.textContent = err.message;
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("loading");
+    }
   };
 }
 
@@ -295,10 +330,7 @@ async function initDashboard() {
   const me = await api("/api/auth/me");
   bindCommon(me);
   isAdmin = me.role === "admin";
-  if (isAdmin) {
-    $("#admin-link").hidden = false;
-    $("#scan").hidden = false;
-  }
+
   $("#refresh").onclick = guard(async () => {
     await api("/api/refresh", "POST");
     await loadControllers();
