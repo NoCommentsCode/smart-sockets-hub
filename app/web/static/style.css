@@ -369,3 +369,59 @@ body[data-page="login"] { overflow-x: hidden; }
   .login-stats { gap: 8px; }
   .login-stat { min-width: 100px; }
 }
+
+/* ---------- Настройки контроллера ---------- */
+.config-relays {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.config-relays-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.config-relays-head span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.config-relay {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(11, 18, 34, .45);
+}
+
+.config-relay-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.config-note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(251, 191, 36, .08);
+  border: 1px solid rgba(251, 191, 36, .22);
+  color: var(--amber);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.modal .btn[data-ok] {
+  min-width: 180px;
+}

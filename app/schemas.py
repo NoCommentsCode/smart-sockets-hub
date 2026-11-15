@@ -30,10 +30,31 @@ class UserUpdate(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    """Самообслуживание: смена логина/пароля с подтверждением текущим паролем."""
     current_password: str
     username: str | None = Field(default=None, min_length=3, max_length=64)
     new_password: str | None = Field(default=None, min_length=6, max_length=72)
+
+
+class RelayConfigItem(BaseModel):
+    id: int
+    name: str | None = Field(default=None, min_length=1, max_length=32)
+    default_state: bool | None = None
+
+
+class ControllerConfigUpdate(BaseModel):
+    device_name: str | None = Field(default=None, min_length=1, max_length=32)
+    relays: list[RelayConfigItem] | None = None
+
+
+class RelayConfigOut(BaseModel):
+    id: int
+    name: str
+    default_state: bool
+
+
+class ControllerConfigOut(BaseModel):
+    device_name: str
+    relays: list[RelayConfigOut]
 
 
 class RelayOut(BaseModel):

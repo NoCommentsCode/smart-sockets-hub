@@ -14,8 +14,10 @@ async def _poll_one(controller_id: int) -> None:
         c = await db.get(Controller, controller_id)
         if not c:
             return
+        client = DeviceClient(c.ip)
         try:
-            data = await DeviceClient(c.ip).get_relays()
+            info = await client.get_info()
+            data = await client.get_relays()
         except DeviceError:
             c.is_online = False
             await db.commit()
@@ -28,6 +30,8 @@ async def _poll_one(controller_id: int) -> None:
             if r:
                 r.name = item.get("name", r.name)
                 r.state = bool(item.get("state", False))
+        c.name = info.get("name", c.name)
+        c.version = info.get("version", c.version)
         c.is_online = True
         c.last_seen = datetime.now(timezone.utc)
         await db.commit()
@@ -36,5 +40,4 @@ async def _poll_one(controller_id: int) -> None:
 async def poll_all() -> None:
     async with SessionLocal() as db:
         ids = (await db.execute(select(Controller.id))).scalars().all()
-    # Отдельная сессия на контроллер — AsyncSession нельзя шарить между задачами
     await asyncio.gather(*(_poll_one(i) for i in ids), return_exceptions=True)

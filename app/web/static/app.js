@@ -227,6 +227,92 @@ function initLogin() {
   };
 }
 
+/* ---------- Настройки контроллера ---------- */
+async function openControllerConfigModal(c) {
+  if (!c.is_online) {
+    toast("Контроллер не в сети — настройки доступны только для онлайн-устройств", "error");
+    return;
+  }
+
+  let config;
+  try {
+    config = await api(`/api/controllers/${c.id}/config`);
+  } catch (e) {
+    toast(e.message, "error");
+    return;
+  }
+
+  const original = JSON.parse(JSON.stringify(config));
+
+  await openModal({
+    title: "Настройки контроллера",
+    subtitle: `${c.ip} · ${config.device_name}`,
+    okText: "Сохранить на устройстве",
+    cancelText: "Отменить",
+    body: `
+      <label class="field">
+        <span>Имя контроллера</span>
+        <input name="device_name" value="${esc(config.device_name)}" maxlength="32" required>
+      </label>
+
+      <div class="config-relays">
+        <div class="config-relays-head">
+          <span>Розетки</span>
+          <span class="muted">Имя и состояние при подаче питания</span>
+        </div>
+        ${config.relays.map((r) => `
+          <div class="config-relay" data-relay-id="${r.id}">
+            <div class="config-relay-title">
+              <span class="status-dot ${r.default_state ? "on" : "off"}"></span>
+              <span>ID ${r.id} · GPIO реле</span>
+            </div>
+            <label class="field">
+              <span>Название розетки</span>
+              <input name="relay_name_${r.id}" value="${esc(r.name)}" maxlength="32" required>
+            </label>
+            <label class="switch-row">
+              <input type="checkbox" name="relay_default_${r.id}" ${r.default_state ? "checked" : ""}>
+              <span>Включена по умолчанию (после перезагрузки)</span>
+            </label>
+          </div>
+        `).join("")}
+      </div>
+
+      <p class="config-note">
+        💡 Состояние по умолчанию применится при следующей перезагрузке контроллера.
+        Текущее состояние розеток не изменится.
+      </p>
+    `,
+    onSubmit: async (fd) => {
+      const payload = {};
+      const deviceName = fd.get("device_name").trim();
+      if (deviceName !== original.device_name) {
+        payload.device_name = deviceName;
+      }
+
+      const relayUpdates = [];
+      for (const r of original.relays) {
+        const name = fd.get(`relay_name_${r.id}`).trim();
+        const defaultState = fd.get(`relay_default_${r.id}`) === "on";
+        const update = { id: r.id };
+        if (name !== r.name) update.name = name;
+        if (defaultState !== r.default_state) update.default_state = defaultState;
+        if (Object.keys(update).length > 1) relayUpdates.push(update);
+      }
+      if (relayUpdates.length) payload.relays = relayUpdates;
+
+      if (!Object.keys(payload).length) {
+        throw new Error("Нет изменений для сохранения");
+      }
+
+      await api(`/api/controllers/${c.id}/config`, "PATCH", payload);
+      toast("Настройки сохранены на устройстве", "success");
+      await loadControllers();
+      return true;
+    },
+  });
+}
+
 /* ---------- Дашборд ---------- */
 let isAdmin = false;
 
@@ -274,6 +360,7 @@ function renderCard(c) {
       </div>
       <div class="card-meta">
         <span class="ip">${esc(c.ip)}</span>
+        <button class="icon-btn" data-config title="Настройки контроллера" aria-label="Редактировать контроллер и розетки">✏️</button>
         ${isAdmin ? '<button class="icon-btn danger" data-del title="Удалить контроллер" aria-label="Удалить контроллер">🗑</button>' : ""}
       </div>
     </div>
@@ -306,6 +393,8 @@ function renderCard(c) {
     toast("Все розетки контроллера выключены", "success");
     await loadControllers();
   });
+
+  card.querySelector("[data-config]").onclick = () => openControllerConfigModal(c);
 
   if (isAdmin) {
     card.querySelector("[data-del]").onclick = async () => {
