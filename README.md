@@ -88,11 +88,13 @@
 
 | Компонент | Версия / условие |
 |---|---|
-| Python | 3.11+ (проверено на 3.11 и 3.13) |
+| Python | **3.10+** (рекомендуется 3.11+; проверено на 3.11 и 3.13) |
 | ОС | Windows / Linux / macOS / Raspberry Pi OS |
 | Сеть | Хаб и ESP32 в **одной локальной сети** (одна подсеть) |
 | ESP32 | Прошивка из раздела [ниже](#требования-к-прошивке-esp32) |
-|_place_ | 200 МБ на диске под venv и БД |
+| Диск | ~200 МБ под venv и БД |
+
+> ⚠️ **Python 3.9 не подойдёт.** Код использует синтаксис `str | None` (PEP 604), который появился в 3.10. На Raspberry Pi OS **Bullseye (Debian 11)** системный Python — 3.9, и запуск упадёт с `TypeError: unsupported operand type(s) for |`. Решение — в разделе [Деплой на Raspberry Pi](#деплой-на-raspberry-pi).
 
 > 💡 ESP32 и ESP32-C3 работают только на **2.4 ГГц**. Если у вас один SSID для 2.4 и 5 ГГц — это нормально: главное, чтобы обе полосы были в одной подсети и не была включена изоляция клиентов (AP isolation).
 
@@ -100,11 +102,13 @@
 
 ## Быстрый старт
 
-### Linux / macOS / Raspberry Pi
+### Linux / macOS
 
 ```bash
-git clone https://github.com/<your-username>/smart-sockets-hub.git
+git clone https://github.com/NoCommentsCode/smart-sockets-hub.git
 cd smart-sockets-hub
+
+python3 --version          # должно быть 3.10 или новее
 
 python3 -m venv .venv
 source .venv/bin/activate
@@ -118,11 +122,15 @@ nano .env          # заполните SECRET_KEY, DEVICE_API_KEY, ADMIN_PASSWO
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
+> 🍓 На Raspberry Pi OS Bullseye системный Python — 3.9. Сначала выполните [установку свежего Python](#шаг-1-проверьте-python).
+
 ### Windows (PowerShell)
 
 ```powershell
-git clone https://github.com/<your-username>/smart-sockets-hub.git
+git clone https://github.com/NoCommentsCode/smart-sockets-hub.git
 cd smart-sockets-hub
+
+python --version           # должно быть 3.10 или новее
 
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -149,6 +157,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 Создан администратор 'admin' — смените пароль!
 Discovery: найдено 2 контроллеров
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 INFO:     Application startup complete.
 ```
 
@@ -185,6 +194,8 @@ POLL_INTERVAL_SECONDS=10
 ```
 
 > ⚠️ `ADMIN_USERNAME` / `ADMIN_PASSWORD` используются **только при первом запуске**, когда таблица пользователей пуста. Дальше пароль меняется через интерфейс (Профиль или Админка), а значения в `.env` игнорируются.
+
+> 💡 Если на машине несколько интерфейсов (VPN, VirtualBox, WSL), автоопределение подсети может промахнуться — задайте `SCAN_CIDR` явно.
 
 ---
 
@@ -227,6 +238,8 @@ POLL_INTERVAL_SECONDS=10
 - **«Сканировать сеть»** (админ) — поиск новых контроллеров.
 - **✏️ Настройки контроллера** — доступно всем, см. ниже.
 - **🗑 Удалить контроллер** (админ) — убирает запись из БД вместе с розетками.
+
+Устройство перемещается между секциями автоматически: poller помечает его offline при таймауте, UI подхватывает изменение в течение ~5–15 секунд.
 
 > ℹ️ Если удалить контроллер, который **сейчас в сети**, следующий автоскан найдёт его снова. Удаление рассчитано на давно неактивные устройства.
 
@@ -337,6 +350,8 @@ curl -b cookies.txt -X PATCH http://localhost:8000/api/controllers/1/config \
       }'
 ```
 
+> 💡 Не проверяйте доступность через `curl -I` — это метод `HEAD`, а страницы отдают только `GET`, поэтому вернётся `405 Method Not Allowed`. Это **нормальный ответ живого сервера**. Используйте `curl -v http://<IP>:8000/login`.
+
 ---
 
 ## Требования к прошивке ESP32
@@ -367,13 +382,80 @@ curl -b cookies.txt -X PATCH http://localhost:8000/api/controllers/1/config \
 
 ## Деплой на Raspberry Pi
 
+### Шаг 1. Проверьте Python
+
+```bash
+cat /etc/os-release
+python3 --version
+uname -m
+```
+
+- **Bookworm (Debian 12) и новее** — Python 3.11+ уже есть, переходите к шагу 3.
+- **Bullseye (Debian 11)** — системный Python 3.9, проект на нём не запустится. Шаг 2.
+- `uname -m` показывает `aarch64` (64-бит) или `armv7l` (32-бит) — это влияет на способ установки.
+
+### Шаг 2. Установка Python 3.11 на Bullseye
+
+Самый быстрый способ — `uv`, он скачивает готовую сборку Python:
+
+```bash
+sudo apt update && sudo apt install -y curl
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# добавляем uv в PATH
+export PATH="$HOME/.local/bin:$PATH"
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+
+uv --version
+```
+
+> ⚠️ Установщик может предложить `source $HOME/.local/bin/env`. Если такого файла нет — **это не ошибка**, просто выполните `export PATH=...`如上. Путь абсолютный, поэтому каталог, из которого вы это выполняете, не важен.
+>
+> Альтернативная установка: `python3 -m pip install --user uv`.
+
+Дальше:
+
+```bash
+cd ~/smart-sockets-hub
+uv python install 3.11
+rm -rf .venv
+uv venv --python 3.11
+source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+**Если система 32-битная (`armv7l`)** — готовой сборки Python может не оказаться. Варианты:
+
+1. Собрать из исходников (20–40 минут на Pi):
+
+   ```bash
+   sudo apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
+     libreadline-dev libsqlite3-dev libffi-dev liblzma-dev uuid-dev wget
+
+   cd /usr/src
+   sudo wget https://www.python.org/ftp/python/3.11.9/Python-3.11.9.tgz
+   sudo tar xzf Python-3.11.9.tgz
+   cd Python-3.11.9
+   sudo ./configure
+   sudo make -j2
+   sudo make altinstall
+
+   python3.11 --version
+   ```
+
+   `--enable-optimizations` намеренно не указан — он удваивает время сборки. `-j2` вместо `-j4`, чтобы не словить OOM на моделях с 1–2 ГБ памяти.
+
+2. Перейти на 64-битную Raspberry Pi OS Bookworm — там Python 3.11 из коробки.
+
+### Шаг 3. Установка и первый запуск
+
 ```bash
 sudo apt update && sudo apt install -y python3-venv git
 
-git clone https://github.com/<your-username>/smart-sockets-hub.git
+git clone https://github.com/NoCommentsCode/smart-sockets-hub.git
 cd smart-sockets-hub
 
-python3 -m venv .venv
+python3 -m venv .venv          # или python3.11 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
@@ -383,9 +465,18 @@ cp .env.example .env && nano .env
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-### Автозапуск через systemd
+### Шаг 4. Автозапуск через systemd
 
-`/etc/systemd/system/sockets-hub.service`:
+Сначала узнайте свои реальные имя пользователя и путь:
+
+```bash
+whoami
+echo $HOME
+ls -l ~/smart-sockets-hub/.venv/bin/python
+```
+
+Создайте файл `sudo nano /etc/systemd/system/sockets-hub.service`.
+**Замените `youruser` на вывод `whoami` во всех трёх местах** — с пользователем `pi` по умолчанию сервис не запустится, если вас зовут иначе:
 
 ```ini
 [Unit]
@@ -395,9 +486,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/smart-sockets-hub
-ExecStart=/home/pi/smart-sockets-hub/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+User=youruser
+WorkingDirectory=/home/youruser/smart-sockets-hub
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/youruser/smart-sockets-hub/.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=5
 
@@ -405,20 +497,60 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
+Почему именно так:
+
+- **`.venv/bin/python -m uvicorn`** вместо `.venv/bin/uvicorn` — работает всегда, даже если скрипт-обёртка не создалась (например, при установке через `uv pip`).
+- **`PYTHONUNBUFFERED=1`** — без него Python буферизует stdout не в терминале, и `journalctl` будет пустым вместо логов discovery.
+- **`--host 0.0.0.0`** — обязательно, иначе сервер будет доступен только с самой Pi.
+- `Group=` не нужен — systemd возьмёт основную группу пользователя.
+
+Установка (сначала остановите ручной запуск через **Ctrl+C**, иначе порт будет занят):
+
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now sockets-hub
-sudo systemctl status sockets-hub
-journalctl -u sockets-hub -f          # логи
+systemctl status sockets-hub
+journalctl -u sockets-hub -f
 ```
 
 > `.env` читается из `WorkingDirectory`, отдельно прописывать `EnvironmentFile` не нужно.
+> Порт 8000 не требует root, поэтому работать от обычного пользователя — правильно и безопасно.
+
+### Шаг 5. Проверка автозапуска
+
+```bash
+sudo reboot
+```
+
+После перезагрузки **не входите в систему на Pi** — просто откройте с телефона или ноутбука `http://<IP-Pi>:8000`.
+
+> 🔓 **Пароль на вход в систему не мешает автозапуску.** systemd поднимает сервис на этапе загрузки (`multi-user.target`), до экрана входа. Входить в сеанс пользователя не требуется, рабочий стол может вообще не запускаться. Именно поэтому используется systemd, а не `~/.bashrc` или папка «Автозагрузка» — те как раз требуют логина.
+
+### Управление сервисом
+
+```bash
+sudo systemctl restart sockets-hub    # после правок кода или .env
+sudo systemctl stop sockets-hub
+sudo systemctl start sockets-hub
+sudo systemctl disable sockets-hub    # убрать из автозагрузки
+systemctl status sockets-hub
+systemctl cat sockets-hub             # показать реально загруженный юнит
+journalctl -u sockets-hub -b          # логи с текущей загрузки
+journalctl -u sockets-hub --since "10 min ago"
+```
+
+> После любой правки `.service` обязательны **обе** команды: `daemon-reload`, затем `restart`. Иначе systemd продолжит использовать старую версию юнита.
 
 ### Зафиксируйте IP
 
-Сделайте **DHCP-резервацию** для Pi в роутере (привязка IP к MAC). Иначе после перезагрузки роутера адрес сменится и все устройства потеряют панель.
+Сделайте **DHCP-резервацию** для Pi в роутере (привязка IP к MAC). Иначе после перезагрузки роутера или Pi адрес сменится, и все устройства потеряют панель — очень частая причина «вчера работало, сегодня нет».
 
-Узнать IP: `hostname -I`. С iPhone/iPad также работает `http://raspberrypi.local:8000` (mDNS); на Android надёжнее по IP.
+```bash
+hostname -I        # текущий IP
+ip link show       # MAC-адрес (link/ether у eth0 или wlan0)
+```
+
+С iPhone/iPad также работает `http://raspberrypi.local:8000` (mDNS); на Android надёжнее по IP.
 
 ---
 
@@ -427,9 +559,18 @@ journalctl -u sockets-hub -f          # логи
 Сервер запускается с `--host 0.0.0.0` — он уже слушает все интерфейсы.
 
 1. Узнайте IP машины: `ipconfig` (Windows) / `hostname -I` (Linux/Pi).
-2. Откройте порт в брандмауэре, если он включён.
-3. На устройстве в той же сети откройте `http://<IP>:8000`.
-4. В меню браузера — **«На экран Домой»**, получится иконка как у приложения.
+2. **Отключите VPN на клиенте** — это причина №1 недоступности, см. ниже.
+3. Откройте порт в брандмауэре сервера, если он включён.
+4. На устройстве в той же сети откройте `http://<IP>:8000`.
+5. В меню браузера — **«На экран Домой»**, получится иконка как у приложения.
+
+### 🥇 VPN на клиенте — проверьте первым делом
+
+Включённый VPN на ноутбуке или телефоне заворачивает **весь** трафик, включая локальные адреса, через туннель. Сервер при этом исправен, `localhost` работает, а по IP с других устройств — таймаут.
+
+Отключите VPN полностью (убедитесь, что виртуальный адаптер исчез) и попробуйте снова. Если нужен VPN постоянно — настройте split tunneling с исключением для `192.168.0.0/16`.
+
+### Брандмауэр на сервере
 
 **Windows (PowerShell от администратора):**
 
@@ -438,13 +579,29 @@ New-NetFirewallRule -DisplayName "Smart Sockets Hub 8000" -Direction Inbound `
   -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private
 ```
 
-Сетевой профиль должен быть **«Частная»**, не «Общедоступная».
+Сетевой профиль должен быть **«Частная»**, не «Общедоступная». Имя интерфейса нужно узнать, а не угадывать:
+
+```powershell
+Get-NetConnectionProfile | Select-Object InterfaceAlias, NetworkCategory
+Set-NetConnectionProfile -InterfaceAlias "<точное имя из вывода выше>" -NetworkCategory Private
+```
+
+Имя может быть `Wi-Fi`, `Wi-Fi 2`, `Беспроводная сеть`, `Ethernet` — подставляйте ровно то, что показал `Get-NetConnectionProfile`.
 
 **Linux с ufw:**
 
 ```bash
 sudo ufw allow 8000/tcp
 ```
+
+**Raspberry Pi OS:** `ufw` и `iptables` могут отсутствовать — это нормально, значит фаервола нет. Проверить:
+
+```bash
+command -v ufw iptables nft
+sudo nft list ruleset
+```
+
+Пустой вывод — фильтрации нет, ищите причину в сети.
 
 ---
 
@@ -489,6 +646,60 @@ smart-sockets-hub/
 
 ## Решение проблем
 
+### 🌐 Не открывается с других устройств (а на сервере работает)
+
+Идите по порядку — это отсекает 99% случаев.
+
+**1. VPN на клиенте.** Отключите и проверьте. Самая частая причина.
+
+**2. Тот ли IP?** После перезагрузки адрес мог смениться по DHCP. Сверьте `hostname -I` на сервере с тем, что вбиваете в браузер. Не путайте IP разных машин.
+
+**3. Проверьте, на каком адресе слушает сервер** (на сервере):
+
+```bash
+sudo ss -tulpn | grep 8000
+```
+
+Должно быть `0.0.0.0:8000`. Если `127.0.0.1:8000` — сервис запущен без `--host 0.0.0.0`, поправьте юнит и сделайте `daemon-reload` + `restart`.
+
+**4. Ping ≠ TCP.** Таймаут пинга ещё не значит, что порт закрыт: ICMP часто режется отдельно. Проверяйте порт (с клиента, Windows):
+
+```powershell
+Test-NetConnection 192.168.1.64 -Port 8000
+arp -a 192.168.1.64
+curl.exe -v --noproxy "*" http://192.168.1.64:8000/login
+```
+
+Используйте именно `curl.exe` — в старом PowerShell `curl` это алиас `Invoke-WebRequest`.
+
+| Результат | Диагноз |
+|---|---|
+| `TcpTestSucceeded : True` | Сеть в порядке → проблема в браузере (proxy, HTTPS, кэш) |
+| `False`, но `arp -a` показывает MAC | L2-связность есть, трафик режется фаерволом/ACL |
+| `False`, `arp` пусто или `incomplete` | Устройства не видят друг друга → изоляция клиентов, разные VLAN |
+| curl `200`, браузер пуст | Браузер лезет через proxy/VPN или подставляет HTTPS |
+
+**5. Тест с телефона.** Откройте тот же адрес с телефона в том же Wi-Fi. Не работает и там → дело в роутере. Работает → дело в конкретном ноутбуке.
+
+**6. Роутер:** выключена ли **AP isolation / client isolation**? Не подключено ли одно из устройств к **гостевой сети**? Не разведены ли 2.4 и 5 ГГц по разным VLAN? Не работает ли mesh-точка в режиме роутера со своим NAT?
+
+**7. Одна подсеть?** Сервер `192.168.1.64` и клиент `192.168.1.42` с маской `255.255.255.0` — одна сеть. `192.168.2.x` — уже другая.
+
+**8. Виртуальные адаптеры на клиенте** (WSL, VMware, VirtualBox, Hyper-V) могут перехватывать маршрут:
+
+```powershell
+route print -4
+Get-NetRoute -DestinationPrefix "192.168.1.0/24"
+```
+
+### `TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'`
+
+Запуск на **Python 3.9** (типично для Raspberry Pi OS Bullseye). Синтаксис `str | None` требует 3.10+.
+
+`from __future__ import annotations` здесь **не поможет** — Pydantic и SQLAlchemy вычисляют аннотации в рантайме.
+
+Решение: установить Python 3.11 (см. [Деплой на Raspberry Pi](#шаг-2-установка-python-311-на-bullseye)) и **пересоздать** `.venv`.
+
 ### `ImportError: The SQLAlchemy asyncio module requires ... 'greenlet'`
 
 Не установлена опциональная зависимость:
@@ -512,13 +723,39 @@ python -m pip install -r requirements.txt
 python -m pip check
 ```
 
+### `source: $HOME/.local/bin/env: No such file or directory`
+
+Установщик `uv` не создал этот файл (или не отработал). Файл не обязателен — он лишь добавляет каталог в PATH:
+
+```bash
+ls -la ~/.local/bin/
+export PATH="$HOME/.local/bin:$PATH"
+uv --version
+```
+
+Если каталога нет вовсе — переустановите `uv` или поставьте через `python3 -m pip install --user uv`.
+
+### Сервис systemd не стартует или пустые логи
+
+```bash
+systemctl status sockets-hub
+systemctl cat sockets-hub            # реально загруженный юнит
+journalctl -u sockets-hub -b --no-pager
+```
+
+- `status=200/CHDIR` или `No such file` — неверный `WorkingDirectory` / путь к python. Сверьте с `whoami` и `echo $HOME`.
+- Пользователь `pi` в юните, а вас зовут иначе — замените во всех трёх местах.
+- Пустой лог — нет `Environment=PYTHONUNBUFFERED=1`.
+- `Address already in use` — параллельно запущен ручной uvicorn, остановите его.
+- После правки юнита не сделали `daemon-reload`.
+
 ### Порт 8000 занят
 
 ```powershell
 netstat -ano | findstr :8000     # Windows
 ```
 ```bash
-sudo lsof -i :8000               # Linux
+sudo ss -tulpn | grep 8000       # Linux
 ```
 
 Остановите процесс или запустите на другом порту: `--port 8080`.
@@ -551,9 +788,10 @@ Poller помечает контроллер offline при таймауте (5 
 Проще всего сбросить БД (потеряются пользователи и список контроллеров, устройства найдутся заново):
 
 ```bash
-# остановите сервер
+sudo systemctl stop sockets-hub
 rm data/hub.db        # Windows: del data\hub.db
-# задайте ADMIN_PASSWORD в .env и запустите снова
+# задайте ADMIN_PASSWORD в .env
+sudo systemctl start sockets-hub
 ```
 
 ---
@@ -584,6 +822,7 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
   pip freeze > requirements.lock
   pip install -r requirements.lock     # на другой машине / на Pi
   ```
+- Не запускайте `--reload` одновременно с systemd-сервисом — порт будет занят.
 
 ### Планы развития
 
